@@ -1,0 +1,83 @@
+<html>
+  <head>
+    <!-- Load TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <!-- Load Posenet -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/posenet"></script>
+ </head>
+
+  <body>
+    <img id='cat'  src='/images/qp04.jpg 'style="width:300px;height:100%" />
+    <div>
+      <canvas id="canvas"></canvas>
+    </div>
+  </body>
+  <!-- Place your code in the script tag below. You can also use an external .js file -->
+  <script>
+      const canvas = document.getElementById('output');
+  const ctx = canvas.getContext('2d');
+    function pointGetangle(a, b, c) {
+  let angleb=Math.acos(((c[0]-b[0])*(a[0]-b[0])+(c[1]-b[1])*(a[1]-b[1]))/ Math.abs(Math.sqrt((Math.pow((a[0]-b[0]), 2)+Math.pow((a[1]-b[1]), 2)))*
+  Math.sqrt((Math.pow((c[0]-b[0]), 2)+Math.pow((c[1]-b[1]), 2)))))*180/Math.PI;
+  return angleb;
+}
+    var flipHorizontal = false;
+
+    var imageElement = document.getElementById('cat');
+
+    posenet.load().then(function(net) {
+      const pose = net.estimateSinglePose(imageElement, {
+        flipHorizontal: true
+      });
+      return pose;
+    }).then(function(pose){
+      console.log(pose);
+      let leftShoulder=[];// 左肩
+    let rightShoulder=[];// 右肩
+    let leftHip=[];// 左臀
+    let rightHip=[];// 右臀
+    let leftKnee=[];// 左膝
+    let rightKnee=[];// 右膝
+    let leftAnkle=[];// 左脚踝
+    let rightAnkle=[];// 有脚踝
+    keypoints=pose.keypoints;
+    for (let index = 0; index < keypoints.length; index++) {
+      const element = keypoints[index];
+      if (element.part=='leftShoulder'&&element.score>0.5) {
+          leftShoulder=[element.position.x, element.position.y];
+        };
+        if (element.part=='rightShoulder'&&element.score>0.5) {
+          rightShoulder=[element.position.x, element.position.y];
+        };
+        if (element.part=='leftHip'&&element.score>0.5) {
+          leftHip=[element.position.x, element.position.y];
+        };
+        if (element.part=='rightHip'&&element.score>0.5) {
+          rightHip=[element.position.x, element.position.y];
+        };
+        if (element.part=='leftKnee'&&element.score>0.5) {
+          leftKnee=[element.position.x, element.position.y];
+        };
+        if (element.part=='rightKnee'&&element.score>0.5) {
+          rightKnee=[element.position.x, element.position.y];
+        };
+        if (element.part=='leftAnkle'&&element.score>0.5) {
+          leftAnkle=[element.position.x, element.position.y];
+        };
+        if (element.part=='rightAnkle'&&element.score>0.8) {
+          rightAnkle=[element.position.x, element.position.y];
+        };
+      
+    }
+    console.log('leftShoulder：'+leftShoulder)
+    console.log('leftHip：'+leftHip)
+    console.log('leftKnee：'+leftKnee)
+    console.log('leftKnee：'+leftKnee)
+    console.log('leftAnkle：'+leftAnkle)
+    const anglea= pointGetangle(leftShoulder, leftHip, leftKnee);
+    const angleb=pointGetangle(leftHip, leftKnee, leftAnkle);
+    console.log(anglea)
+    console.log(angleb)
+    })
+  </script>
+</html>
