@@ -89,16 +89,22 @@
         </video>
         <canvas id="output" />
     </div>
+
+    <div>
+        <input type="number" min="0" value="10" id="sittotalsecond" /><br>
+        左：<input type="radio" checked value="1" name="side"  />
+        右：<input type="radio"  value="2" name="side" /><br>
+        静坐检测：<input type="radio" checked value="1" name="type"  />
+        高抬腿检测：<input type="radio"  value="2" name="type" /><br>
+    </div>
     <div>
         <input type="button" id="begin" value="开始" /> 
         <input type="button" id="end" value="结束" /> 
     </div>
-    <div>
-        <input type="number" min="0" value="120" id="sittotalsecond" />
-    </div>
     <div id="getinbox" style="display: none;color: red;">
         有人进入！！！
     </div>
+    <div >高抬腿次数：<span id="taitui"></span></div>
     <div id="msgbox">
 
     </div>

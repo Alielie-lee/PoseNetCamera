@@ -20,10 +20,10 @@ import '@tensorflow/tfjs-backend-webgl';
 import dat from 'dat.gui';
 import Stats from 'stats.js';
 
-import {pointGetangle, rayCasting, drawBoundingBox, drawKeypoints, drawSkeleton, isMobile, toggleLoadingUI, tryResNetButtonName, tryResNetButtonText, updateTryResNetButtonDatGuiCss} from './demo_util';
+import {gettime, pointGetangle, rayCasting, drawBoundingBox, drawKeypoints, drawSkeleton, isMobile, toggleLoadingUI, tryResNetButtonName, tryResNetButtonText, updateTryResNetButtonDatGuiCss} from './demo_util';
 
-const videoWidth = 540;
-const videoHeight = 960;
+const videoWidth = 800;
+const videoHeight = 800;
 const stats = new Stats();
 
 /**
@@ -75,13 +75,17 @@ const defaultResNetMultiplier = 1.0;
 const defaultResNetStride = 32;
 const defaultResNetInputResolution = 250;
 let sitsecond=0;
-let sittotalsecond=parseInt( document.getElementById('sittotalsecond').value);
+let sittotalsecond=parseInt( document.getElementById('sittotalsecond').value)*10;
 let getinflag=false;
 const setgetincount=3;
 const setgetinsecond=3;
+const waitgetinsecond=3;
+let waitsecond=0;
 let getinsecond=0;
+let taituicount=0;
 let timer1 =null;
 let timer2 =null;
+let timer3 =null;
 
 const guiState = {
   algorithm: 'multi-pose',
@@ -292,7 +296,6 @@ function setupFPS() {
   stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
   document.getElementById('main').appendChild(stats.dom);
 }
-
 /**
  * Feeds an image to posenet to estimate poses - this is where the magic
  * happens. This function loops with a requestAnimationFrame method.
@@ -395,7 +398,7 @@ function detectPoseInRealTime(video, net) {
     let poses = [];
     let minPoseConfidence;
     let minPartConfidence;
-    ctx.rect( 20, 20, 200, 200);
+    ctx.rect( 20, 20, 600, 600);
     ctx.strokeStyle = 'blue';
     ctx.stroke();
     switch (guiState.algorithm) {
@@ -440,9 +443,12 @@ function detectPoseInRealTime(video, net) {
     let leftKnee=[];// 左膝
     let rightKnee=[];// 右膝
     let leftAnkle=[];// 左脚踝
-    let rightAnkle=[];// 有脚踝
+    let rightAnkle=[];// 右脚踝
 
     let getincount=0;
+    let setbegin=false;
+
+    let thistaituibuzhou=0;
     // For each pose (i.e. person) detected in an image, loop through the poses
     // and draw the resulting skeleton and keypoints if over certain confidence
     // scores
@@ -459,31 +465,31 @@ function detectPoseInRealTime(video, net) {
         }
               // 区域判断
       keypoints.forEach(({position, part, score})=>{
-        if (part=='leftShoulder'&&score>0.8) {
+        if (part=='leftShoulder'&&score>0.7) {
           leftShoulder=[position.x, position.y];
         };
-        if (part=='rightShoulder'&&score>0.8) {
+        if (part=='rightShoulder'&&score>0.7) {
           rightShoulder=[position.x, position.y];
         };
-        if (part=='leftHip'&&score>0.8) {
+        if (part=='leftHip'&&score>0.7) {
           leftHip=[position.x, position.y];
         };
-        if (part=='rightHip'&&score>0.8) {
+        if (part=='rightHip'&&score>0.7) {
           rightHip=[position.x, position.y];
         };
-        if (part=='leftKnee'&&score>0.8) {
+        if (part=='leftKnee'&&score>0.7) {
           leftKnee=[position.x, position.y];
         };
-        if (part=='rightKnee'&&score>0.8) {
+        if (part=='rightKnee'&&score>0.7) {
           rightKnee=[position.x, position.y];
         };
-        if (part=='leftAnkle'&&score>0.8) {
+        if (part=='leftAnkle'&&score>0.7) {
           leftAnkle=[position.x, position.y];
         };
-        if (part=='rightAnkle'&&score>0.8) {
+        if (part=='rightAnkle'&&score>0.7) {
           rightAnkle=[position.x, position.y];
         };
-        if (rayCasting([position.x, position.y], [[20, 20], [20, 220], [220, 220], [220, 20]])) {
+        if (rayCasting([position.x, position.y], [[20, 20], [20, 620], [620, 620], [620, 20]])) {
           getincount+=1;
         }
       });
@@ -493,49 +499,122 @@ function detectPoseInRealTime(video, net) {
     if (getincount>=setgetincount&&getinsecond==0&&getinflag==false) {
       getinflag=true;
       document.getElementById('getinbox').style.display='block';
-      timer2= window.setInterval(function() {
-        getinsecond+=1;
-        if (getinsecond>=setgetinsecond) {
-          window.clearInterval(timer2);
-          getinsecond=0;
-          getinflag=false;
-          document.getElementById('getinbox').style.display='none';
-        }
-      }, 1000);
+      if (timer2==null) {
+        timer2= window.setInterval(function() {
+          getinsecond+=1;
+          if (getinsecond>=setgetinsecond) {
+            window.clearInterval(timer2);
+            timer2=null;
+            getinsecond=0;
+            getinflag=false;
+            document.getElementById('getinbox').style.display='none';
+          }
+        }, 1000);
     }
-
-    // 左边判断
-    if (leftShoulder!=[]&&leftHip!=[]&&leftKnee!=[]&&leftAnkle!=[]) {
-      const anglea= pointGetangle(leftShoulder, leftHip, leftKnee);
-      const angleb=pointGetangle(leftHip, leftKnee, leftAnkle);
-      if (anglea>=80&&anglea<=100&&angleb>=80&&angleb<=100) {
-        if (sitsecond==0) {
+    }
+    let type=1;// document.getElementsByName('type').value;
+    let side= document.getElementsByName('side').value;
+    let shoulder=[];
+    let hip=[];
+    let knee=[];
+    let ankle=[];
+    if (side==1) {
+      shoulder=leftShoulder;
+      hip=leftHip;
+      knee=leftKnee;
+      ankle=leftAnkle;
+    } else {
+      shoulder=rightShoulder;
+      hip=rightHip;
+      knee=rightKnee;
+      ankle=rightAnkle;
+    }
+    if (type==1) {
+    if (shoulder.length>0&&hip.length>0&&knee.length>0&&ankle.length>0) {
+      const anglea= pointGetangle(shoulder, hip, knee);
+      const angleb=pointGetangle(hip, knee, ankle);
+      if (anglea>=70&&anglea<=130&&angleb>=70&&angleb<=130) {
+        if (sitsecond==0&&setbegin==false&&timer1==null) {
+          setbegin=true;
           timer1=window.setInterval(function() {
+            if (sitsecond==30) {
+              msgbox.innerHTML=msgbox.innerHTML+'<div> '+gettime()+' 静坐开始！</div>';
+              if (timer3==null) {
+                timer3=window.setInterval(function() {
+                  waitsecond+=1;
+                  if (waitsecond>=waitgetinsecond*10) {
+                    window.clearInterval(timer1);
+                    timer1=null;
+                    msgbox.innerHTML=msgbox.innerHTML+'<div>'+gettime()+' 静坐结束2！本次静坐 '+sitsecond+' 秒</div>';
+                    sitsecond=0;
+                    waitsecond=0;
+                    setbegin=false;
+                    window.clearInterval(timer3);
+                    timer3=null;
+                  }
+                }, 100);
+            }
+            }
+            if (sitsecond==sittotalsecond) {
+              msgbox.innerHTML=msgbox.innerHTML+'<div>'+gettime()+' 静坐完成！本次静坐 '+sitsecond/10+' 秒</div>';
+              window.clearInterval(timer1);
+              timer1=null;
+              sitsecond=0;
+              waitsecond=0;
+              setbegin=false;
+              window.clearInterval(timer3);
+              timer3=null;
+            }
+            if (waitsecond>=waitgetinsecond*10) {
+              console.log('结束');
+              window.clearInterval(timer1);
+              timer1=null;
+              msgbox.innerHTML=msgbox.innerHTML+'<div>'+gettime()+' 静坐结束1！本次静坐 '+sitsecond/10+' 秒</div>';
+              sitsecond=0;
+              waitsecond=0;
+              setbegin=false;
+              window.clearInterval(timer3);
+              timer3=null;
+            }
             sitsecond+=1;
-          }, 1000);
+          }, 100);
         }
-      } else {
-        window.clearInterval(timer1);
-        if (sitsecond>3) {
-        msgbox.innerHTML=msgbox.innerHTML+'<div>静坐结束！</div>';
-        }
-        sitsecond=0;
+        waitsecond=0;
+        window.clearInterval(timer3);
+        timer3=null;
       }
     }
-    if (sitsecond==3) {
-      msgbox.innerHTML=msgbox.innerHTML+'<div>静坐开始！</div>';
+  } else {
+    if (shoulder.length>0&&hip.length>0&&knee.length>0&&ankle.length>0) {
+      console.log('in');
+      const anglea= pointGetangle(shoulder, hip, knee);
+      const angleb=pointGetangle(hip, knee, ankle);
+      if (anglea>=170&&anglea<=190&&angleb>=170&&angleb<=190) {
+        if (thistaituibuzhou==0) {
+          console.log(1);
+          thistaituibuzhou+=1;
+        }
+         if (thistaituibuzhou==2) {
+          console.log(3);
+          thistaituibuzhou=0;
+          taituicount+=1;
+          document.getElementById('taitui').innerText=taituicount;
+          side=(side==1?2:1);
+        }
+      }
+      if (anglea>=80&&anglea<=100&&angleb>=80&&angleb<=100) {
+        console.log(2);
+        if (thistaituibuzhou==1) {
+          thistaituibuzhou+=1;
+        }
+      }
     }
-    if (sitsecond==sittotalsecond) {
-      msgbox.innerHTML=msgbox.innerHTML+'<div>静坐完成！</div>';
-      window.clearInterval(timer1);
-      sitsecond=0;
-    }
+  }
     // End monitoring code for frames per second
     stats.end();
 
     requestAnimationFrame(poseDetectionFrame);
   }
-
   poseDetectionFrame();
 }
 
@@ -579,6 +658,6 @@ document.getElementById('begin').onclick=function() {
   bindPage();
 };
 document.getElementById('end').onclick=function() {
-  bindPage();
+  poseDetectionFramefun();
 };
 

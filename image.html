@@ -7,23 +7,92 @@
  </head>
 
   <body>
-    <img id='cat'  src='/images/qp04.jpg 'style="width:300px;height:100%" />
+    <img id='cat'  src='/images/qp07.jpg 'style="width:600px;" />
     <div>
-      <canvas id="canvas"></canvas>
+      <canvas id="output" width="600" height="800"></canvas>
     </div>
   </body>
   <!-- Place your code in the script tag below. You can also use an external .js file -->
   <script>
-      const canvas = document.getElementById('output');
-  const ctx = canvas.getContext('2d');
-    function pointGetangle(a, b, c) {
-  let angleb=Math.acos(((c[0]-b[0])*(a[0]-b[0])+(c[1]-b[1])*(a[1]-b[1]))/ Math.abs(Math.sqrt((Math.pow((a[0]-b[0]), 2)+Math.pow((a[1]-b[1]), 2)))*
-  Math.sqrt((Math.pow((c[0]-b[0]), 2)+Math.pow((c[1]-b[1]), 2)))))*180/Math.PI;
-  return angleb;
+const color = 'aqua';
+const boundingBoxColor = 'red';
+const lineWidth = 2;
+function toTuple({y, x}) {
+  return [y, x];
 }
+ function drawPoint(ctx, y, x, r, color) {
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, 2 * Math.PI);
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+
+/**
+ * Draws a line on a canvas, i.e. a joint
+ */
+function drawSegment([ay, ax], [by, bx], color, scale, ctx) {
+  ctx.beginPath();
+  ctx.moveTo(ax * scale, ay * scale);
+  ctx.lineTo(bx * scale, by * scale);
+  ctx.lineWidth = lineWidth;
+  ctx.strokeStyle = color;
+  ctx.stroke();
+}
+
+/**
+ * Draws a pose skeleton by looking up all adjacent keypoints/joints
+ */
+function drawSkeleton(keypoints, minConfidence, ctx, scale = 1) {
+  const adjacentKeyPoints =
+      posenet.getAdjacentKeyPoints(keypoints, minConfidence);
+
+  adjacentKeyPoints.forEach((keypoints) => {
+    drawSegment(
+        toTuple(keypoints[0].position), toTuple(keypoints[1].position), color,
+        scale, ctx);
+  });
+}
+
+/**
+ * Draw pose keypoints onto a canvas
+ */
+function drawKeypoints(keypoints, minConfidence, ctx, scale = 1) {
+  for (let i = 0; i < keypoints.length; i++) {
+    const keypoint = keypoints[i];
+
+    if (keypoint.score < minConfidence) {
+      continue;
+    }
+
+    const {y, x} = keypoint.position;
+    ctx.fillText(keypoint.part,x * scale, y * scale)
+    drawPoint(ctx, y * scale, x * scale, 3, color);
+  }
+}
+    var imageElement = document.getElementById('cat');
+    const canvas = document.getElementById('output');
+    const ctx = canvas.getContext('2d');
+    var img=new Image()
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    img.src=imageElement.src;
+    img.onload=function(){
+      ctx.drawImage(img,0,0,600,800);
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+
+    }
+
+
+    
+    function pointGetangle(a, b, c) {
+      let angleb=Math.acos(((c[0]-b[0])*(a[0]-b[0])+(c[1]-b[1])*(a[1]-b[1]))/ Math.abs(Math.sqrt((Math.pow((a[0]-b[0]), 2)+Math.pow((a[1]-b[1]), 2)))*
+      Math.sqrt((Math.pow((c[0]-b[0]), 2)+Math.pow((c[1]-b[1]), 2)))))*180/Math.PI;
+      return angleb;
+    }
     var flipHorizontal = false;
 
-    var imageElement = document.getElementById('cat');
+   
 
     posenet.load().then(function(net) {
       const pose = net.estimateSinglePose(imageElement, {
@@ -41,6 +110,9 @@
     let leftAnkle=[];// 左脚踝
     let rightAnkle=[];// 有脚踝
     keypoints=pose.keypoints;
+    drawKeypoints(keypoints, 0.5, ctx);
+    drawSkeleton(keypoints, 0.5, ctx);
+
     for (let index = 0; index < keypoints.length; index++) {
       const element = keypoints[index];
       if (element.part=='leftShoulder'&&element.score>0.5) {
